@@ -76,31 +76,27 @@ function signalProcessing(input, scrCell){
   }
 }
 
+// control the sequence of expression for each rainDrop
 function simulatePrecip(droplet, k){
-  const bow = droplet.digits[droplet.size-1];
-  const stern = droplet.digits[0];
-  const dropElemTail = droplet.element.children[k-droplet.size];    //  the visible html component
-  const dropElemHead = droplet.element.children[k];                 //  the visible html component
   const caboose = {spot:droplet.digits[(droplet.size-1)-(k%droplet.size)].spot, status:`${droplet.digits[(droplet.size-1)-(k%droplet.size)].status}`, glyph:`${droplet.digits[(droplet.size-1)-(k%droplet.size)].glyph}`, channel:`${droplet.digits[(droplet.size-1)-(k%droplet.size)].channel}`, turbidity:droplet.digits[(droplet.size-1)-(k%droplet.size)].turbidity};
   droplet.rearGuard = caboose;
-
-  if (dropElemHead) {
-    dropElemHead.classList.add("header");
-    dropElemHead.innerText = unicode[rand(unicode.length-1)];
+  if (droplet.element.children[k]) {    // if the leader is onscreen, make it glow
+    droplet.element.children[k].classList.add("header");
+    droplet.element.children[k].innerText = unicode[rand(unicode.length-1)];
   }
-  if(droplet.element.children[k-1]){
+  if(droplet.element.children[k-1]){    // if the second character is onscreen, make it *not* glow
     droplet.element.children[k-1].classList.remove("header");
     droplet.element.children[k-1].classList.add("io");
   }
-  droplet.digits[(droplet.size-1)-(k%droplet.size)].spot = k;   //  current spot, or Bow of the droplet
-  if (k < vertCount) {
+  droplet.digits[(droplet.size-1)-(k%droplet.size)].spot = k;   //  update the current spot of the droplet
+  if (k < vertCount) {    //  while the iterator is within the screen grid, make the characters visible
     droplet.digits[(droplet.size-1)-(k%droplet.size)].status = "on";
-    signalProcessing(droplet.digits[(droplet.size-1)-(k%droplet.size)], dropElemHead);
+    signalProcessing(droplet.digits[(droplet.size-1)-(k%droplet.size)], droplet.element.children[k]);
   }
-  if (droplet.rearGuard.status == "on" && dropElemTail) {
-    dropElemTail.classList.remove("io");
+  if (droplet.rearGuard.status == "on" && droplet.element.children[k-droplet.size]) {   // when the tail of the drop is within screen range, make it remove the vestigial characters
+    droplet.element.children[k-droplet.size].classList.remove("io");
     droplet.rearGuard.status = "off";
-    droplet.rearGuard.channel == "dynamic" ? dynoFill(droplet.rearGuard, dropElemTail) : dropElemTail.innerText = "";
+    droplet.rearGuard.channel == "dynamic" ? dynoFill(droplet.rearGuard, droplet.element.children[k-droplet.size]) : droplet.element.children[k-droplet.size].innerText = "";
   }
 }
 
@@ -145,5 +141,4 @@ function cyberZeus(){   //  master function for making it rain
   falling(dew1);  //  activate the drop
 }
 
-// cyberZeus();
 setInterval(cyberZeus, forecast);    //  run repeatedly
