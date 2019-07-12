@@ -21,21 +21,15 @@ body {
   transform: matrix(-1, 0, 0, 1, 0, 0);
 }
 
-.leader {
+.header {
   color: #ccffcc;
   text-shadow: 0 0 3px #00ff00, 0 0 6px #ccffcc, 0 0 12px #ffffff;
   font-weight: bold;
   filter: blur(0px);
   -webkit-filter: blur(0px);
 }
-.on {
+
+.io {
   color: #00ff00;
   text-shadow: 0 0 5px #00ff00, 0 0 8px #00cc00;
 }
-
-/* for troubleshooting purposes */
-/* .bounder {
-  border-style: solid;
-  border-color: #00ff00;
-  border-radius: 4px;
-} */
