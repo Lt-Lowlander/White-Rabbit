@@ -4,8 +4,8 @@ const unicode = ["ｦ", "ｧ", "ｨ", "ｩ", "ｪ", "ｫ", "ｬ", "ｭ", "ｮ", 
 //  preliminary setup
 const forecast = 50;   //  informs how frequently the drops will fall (sets the timespan between function calls (in ms))
 const squareSide = 36;  // arbitrarily chosen measure for individual cells
-const blankPercentage = 12;   // controls the percentage of blank spaces
-const staticPercentage = 50;    // controls the percentage of static spaces
+const blankPercentage = 24;   // controls the percentage of blank spaces
+const staticPercentage = 44;    // controls the percentage of static spaces
 const staticRange = blankPercentage + staticPercentage; // the upper bound for the static numbers (lower bound is blankPercentage + 1).
 // const dynamicPercentage = (100 - staticRange);    //  remaining percentage of non-blank & non-static spaces is dynamic
 const speedFastest = 15;   //  fastest speed
@@ -46,8 +46,7 @@ function dynoFill(readIn, readOut){
   let recurrence;
   const timer = 50 + rand(130);
   function charSwitch(){
-    readOut.innerText = "";   //  by default display is empty, only puts characters in activated cells if conditions are correct
-    if (readOut.classList.contains("on")){    // **NB .contains is a DOMTokenlist method
+    if (readOut.classList.contains("io")){    // **NB .contains is a DOMTokenlist method
       readOut.innerText = unicode[rand(unicode.length-1)];
     }
   }
@@ -61,7 +60,7 @@ function dynoFill(readIn, readOut){
 }
 
 // assign an output value to the current cell based on the established blank, static, and dynamic percentages above
-function signalProcessing(input, scrCell, prevCell){
+function signalProcessing(input, scrCell){
   const signalIndex = rand(100)+1;    //random index for sorting
   if (signalIndex <= blankPercentage) {
     input.channel = "silent";
@@ -77,46 +76,27 @@ function signalProcessing(input, scrCell, prevCell){
   }
 }
 
+// control the sequence of expression for each rainDrop
 function simulatePrecip(droplet, k){
-  const bow = droplet.digits[droplet.size-1];
-  const stern = droplet.digits[0];
-  const dropElemTail = droplet.element.children[k-droplet.size];
-  const dropElemHead = droplet.element.children[k];
-  const colValues = droplet.canal;
-  if (dropElemHead) {
-    dropElemHead.classList.add("leader");
+  const caboose = {spot:droplet.digits[(droplet.size-1)-(k%droplet.size)].spot, status:`${droplet.digits[(droplet.size-1)-(k%droplet.size)].status}`, glyph:`${droplet.digits[(droplet.size-1)-(k%droplet.size)].glyph}`, channel:`${droplet.digits[(droplet.size-1)-(k%droplet.size)].channel}`, turbidity:droplet.digits[(droplet.size-1)-(k%droplet.size)].turbidity};
+  droplet.rearGuard = caboose;
+  if (droplet.element.children[k]) {    // if the leader is onscreen, make it glow
+    droplet.element.children[k].classList.add("header");
+    droplet.element.children[k].innerText = unicode[rand(unicode.length-1)];
   }
-  if(droplet.element.children[k-1]){
-    droplet.element.children[k-1].classList.remove("leader");
-    droplet.element.children[k-1].classList.add("on");
+  if(droplet.element.children[k-1]){    // if the second character is onscreen, make it *not* glow
+    droplet.element.children[k-1].classList.remove("header");
+    droplet.element.children[k-1].classList.add("io");
   }
-  if (stern.spot <= vertCount) { // as long as there are drop elements on the screen
-    if (stern.spot <= 0 && bow.spot < droplet.size){    // Pouring phase establishes the digits onscreen
-      signalProcessing(bow, dropElemHead);
-      colValues[bow.spot] = {status:bow.status, glyph:bow.glyph, channel:bow.channel, turbidity:bow.turbidity};
-    } else if (stern.spot > 0 && bow.spot < vertCount) {   // Enter the Sliding phase
-      signalProcessing(bow, dropElemHead);
-      colValues[bow.spot] = {status:bow.status, glyph:bow.glyph, channel:bow.channel, turbidity:bow.turbidity};
-      colValues[stern.spot-1].status = "off";
-      dynoFill(colValues[stern.spot-1], dropElemTail);
-      dropElemTail.classList.remove("on");
-    } else if ( bow.spot >= vertCount) {    //  Enter the Draining phase
-      droplet.digits[vertCount+droplet.size-1-k] = {spot:k, status:"off", glyph:"", channel:"none", turbidity:0};
-      colValues[stern.spot-1].status = "off";
-      dynoFill(colValues[stern.spot-1], dropElemTail);
-      dropElemTail.classList.remove("on");
-    }
+  droplet.digits[(droplet.size-1)-(k%droplet.size)].spot = k;   //  update the current spot of the droplet
+  if (k < vertCount) {    //  while the iterator is within the screen grid, make the characters visible
+    droplet.digits[(droplet.size-1)-(k%droplet.size)].status = "on";
+    signalProcessing(droplet.digits[(droplet.size-1)-(k%droplet.size)], droplet.element.children[k]);
   }
-  for (var j = 0; j < droplet.size; j++) {   //  relabel the location for each spot within the rainDrop
-    if ((droplet.digits[j].spot >= 0) && bow.spot < droplet.size){   // if the digits are onscreen but the drop hasn't begun to slide
-      if(droplet.digits[j-1]){   //  pass along the cell's glyph, channel signal, and interval info to the subsequent digit within the droplet.
-        droplet.digits[j-1] = {spot:(droplet.digits[j].spot), status:(k<=vertCount)?"on":"off", glyph:droplet.digits[j].glyph, channel:droplet.digits[j].channel, turbidity:droplet.digits[j].turbidity};
-        if (j == droplet.size-1){
-          droplet.digits[j].status = "leader";
-        }
-      }
-    }
-    droplet.digits[j].spot += 1;    //  increment all the droplet digits along the column
+  if (droplet.rearGuard.status == "on" && droplet.element.children[k-droplet.size]) {   // when the tail of the drop is within screen range, make it remove the vestigial characters
+    droplet.element.children[k-droplet.size].classList.remove("io");
+    droplet.rearGuard.status = "off";
+    droplet.rearGuard.channel == "dynamic" ? dynoFill(droplet.rearGuard, droplet.element.children[k-droplet.size]) : droplet.element.children[k-droplet.size].innerText = "";
   }
 }
 
@@ -124,7 +104,7 @@ function simulatePrecip(droplet, k){
 function falling(water){
   const ticker = water.speed;
   for (var i = 0; i < vertCount+water.size; i++) {  // Increment the rainDrop among the cells within a column
-    const k = i;
+    const k = i;    //  so as not to overwrite the i value
     let waterClock = setTimeout(function(){
       simulatePrecip(water,k);
     }, ticker*k);
@@ -147,21 +127,13 @@ function RainDrop() {
   this.digitBuilder = function(measure){
     let digitHolder = {};
     for (var i = 0; i < measure; i++) {
-      const order = {spot:(i+1-measure), status:(i == measure-1) ? "leader" : "off", glyph:"", channel:"none", turbidity:0};
+      const order = {spot:(i+1-measure), status:(i == measure-1) ? "on" : "off", glyph:"", channel:"none", turbidity:0};
       digitHolder[i] = order;
     }
     return digitHolder;
   },
   this.digits = this.digitBuilder(this.size),
-  this.canalCrew = function(){
-    let sal = {};
-    for (var i = 0; i < vertCount; i++) {
-      const eerie = {status:"off", glyph:"", channel:"none", turbidity:0};
-      sal[i] = eerie;
-    }
-    return sal;
-  },
-  this.canal = this.canalCrew()
+  this.rearGuard = {};
 }
 
 function cyberZeus(){   //  master function for making it rain
