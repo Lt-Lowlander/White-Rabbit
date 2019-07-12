@@ -81,7 +81,9 @@ function simulatePrecip(droplet, k){
   const stern = droplet.digits[0];
   const dropElemTail = droplet.element.children[k-droplet.size];
   const dropElemHead = droplet.element.children[k];
-  const colValues = droplet.caboose;
+  const caboose = {spot:droplet.digits[(droplet.size-1)-(k%droplet.size)].spot, status:`${droplet.digits[(droplet.size-1)-(k%droplet.size)].status}`, glyph:`${droplet.digits[(droplet.size-1)-(k%droplet.size)].glyph}`, channel:`${droplet.digits[(droplet.size-1)-(k%droplet.size)].channel}`, turbidity:droplet.digits[(droplet.size-1)-(k%droplet.size)].turbidity};
+  droplet.rearGuard = caboose;
+
   if (dropElemHead) {
     dropElemHead.classList.add("header");
     dropElemHead.innerText = unicode[rand(unicode.length-1)];
@@ -90,31 +92,54 @@ function simulatePrecip(droplet, k){
     droplet.element.children[k-1].classList.remove("header");
     droplet.element.children[k-1].classList.add("io");
   }
-  if (stern.spot <= vertCount) { // as long as there are drop elements on the screen
-    if (stern.spot <= 0 && bow.spot < droplet.size){    // Pouring phase establishes the digits onscreen
-      signalProcessing(bow, dropElemHead);
-      colValues[bow.spot] = {status:bow.status, glyph:bow.glyph, channel:bow.channel, turbidity:bow.turbidity};
-    } else if (stern.spot > 0 && bow.spot < vertCount) {   // Enter the Sliding phase
-      signalProcessing(bow, dropElemHead);
-      colValues[bow.spot] = {status:bow.status, glyph:bow.glyph, channel:bow.channel, turbidity:bow.turbidity};
-      colValues[stern.spot-1].status = "off";
-      dynoFill(colValues[stern.spot-1], dropElemTail);
-      dropElemTail.classList.remove("io");
-    } else if ( bow.spot >= vertCount) {    //  Enter the Draining phase
-      droplet.digits[vertCount+droplet.size-1-k] = {spot:k, status:"off", glyph:"", channel:"none", turbidity:0};
-      colValues[stern.spot-1].status = "off";
-      dynoFill(colValues[stern.spot-1], dropElemTail);
-      dropElemTail.classList.remove("io");
+
+  debugger
+  droplet.digits[(droplet.size-1)-(k%droplet.size)].spot = k;   //  current spot, or Bow of the droplet
+  // droplet.digits[(droplet.size-1)-((k-(droplet.size-1))%droplet.size)]   //  oldest spot, or Stern of the droplet
+  debugger
+
+  if (k < vertCount) {
+    signalProcessing(droplet.digits[(droplet.size-1)-(k%droplet.size)], dropElemHead);
+  }
+  debugger
+
+  if ("stern.spot" <= vertCount) {
+    if (ster) {
+
     }
   }
-  for (var j = 0; j < droplet.size; j++) {   //  relabel the location for each spot within the rainDrop
-    if ((droplet.digits[j].spot >= 0) && bow.spot < droplet.size){   // if the digits are onscreen but the drop hasn't begun to slide
-      if(droplet.digits[j-1]){   //  pass along the cell's glyph, channel signal, and interval info to the subsequent digit within the droplet.
-        droplet.digits[j-1] = {spot:(droplet.digits[j].spot), status:(k<=vertCount)?"on":"off", glyph:droplet.digits[j].glyph, channel:droplet.digits[j].channel, turbidity:droplet.digits[j].turbidity};
-      }
-    }
-    droplet.digits[j].spot += 1;    //  increment all the droplet digits along the column
-  }
+
+
+  // if (stern.spot <= vertCount) { // as long as there are drop elements on the screen
+  //   if (stern.spot <= 0 && bow.spot < droplet.size){    // Pouring phase establishes the digits onscreen
+  //     signalProcessing(bow, dropElemHead);
+  //     colValues[bow.spot] = {status:bow.status, glyph:bow.glyph, channel:bow.channel, turbidity:bow.turbidity};
+  //   } else if (stern.spot > 0 && bow.spot < vertCount) {   // Enter the Sliding phase
+  //     signalProcessing(bow, dropElemHead);
+  //     colValues[bow.spot] = {status:bow.status, glyph:bow.glyph, channel:bow.channel, turbidity:bow.turbidity};
+  //     colValues[stern.spot-1].status = "off";
+  //     dynoFill(colValues[stern.spot-1], dropElemTail);
+  //     dropElemTail.classList.remove("io");
+  //   } else if ( bow.spot >= vertCount) {    //  Enter the Draining phase
+  //     droplet.digits[vertCount+droplet.size-1-k] = {spot:k, status:"off", glyph:"", channel:"none", turbidity:0};
+  //     colValues[stern.spot-1].status = "off";
+  //     dynoFill(colValues[stern.spot-1], dropElemTail);
+  //     dropElemTail.classList.remove("io");
+  //     // debugger
+  //   }
+  // }
+  // // debugger
+  //
+  // // droplet.digits[(droplet.size-1)-((k-1)%droplet.size)].spot   //  most recent spot
+  //
+  // // for (var j = 0; j < droplet.size; j++) {   //  relabel the location for each spot within the rainDrop
+  // //   if ((droplet.digits[j].spot >= 0) && bow.spot < droplet.size){   // if the digits are onscreen but the drop hasn't begun to slide
+  // //     if(droplet.digits[j-1]){   //  pass along the cell's glyph, channel signal, and interval info to the subsequent digit within the droplet.
+  // //       droplet.digits[j-1] = {spot:(droplet.digits[j].spot), status:(k<=vertCount)?"on":"off", glyph:droplet.digits[j].glyph, channel:droplet.digits[j].channel, turbidity:droplet.digits[j].turbidity};
+  // //     }
+  // //   }
+  // //   droplet.digits[j].spot += 1;    //  increment all the droplet digits along the column
+  // // }
 }
 
 // move the raindrop across the screen
@@ -150,7 +175,7 @@ function RainDrop() {
     return digitHolder;
   },
   this.digits = this.digitBuilder(this.size),
-  this.caboose = {};
+  this.rearGuard = {};
 }
 
 function cyberZeus(){   //  master function for making it rain
@@ -158,4 +183,9 @@ function cyberZeus(){   //  master function for making it rain
   falling(dew1);  //  activate the drop
 }
 
-setInterval(cyberZeus, forecast);    //  run repeatedly
+cyberZeus();
+// setInterval(cyberZeus, forecast);    //  run repeatedly
+
+
+// 1) Replace the canal attribute for a leaner RainDrop object
+// 2) Replace the J for loop in simulatePrecip in favor of a modulus operation?
